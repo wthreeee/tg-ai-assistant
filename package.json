@@ -1,0 +1,25 @@
+{
+  "name": "tg-ai-assistant",
+  "private": true,
+  "description": "AI-консультант для бизнеса: отвечает клиентам по базе знаний в Telegram и на сайте, собирает заявки, передаёт диалог менеджеру",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.ts",
+    "dev": "node --env-file-if-exists=.env --watch src/index.ts",
+    "typecheck": "tsc",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "fastify": "^5.12.7",
+    "grammy": "^1.46.0",
+    "https-proxy-agent": "^9.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.3"
+  }
+}
