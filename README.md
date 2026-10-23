@@ -1,96 +1,99 @@
-# 🧠 AI-консультант для бизнеса: Telegram + чат на сайте
+# 🧠 AI Assistant for Businesses: Telegram + Website Chat
 
-Ассистент отвечает клиентам 24/7 по базе знаний компании, записывает на услуги и передаёт сложные диалоги живому менеджеру. Работает одновременно в Telegram-боте и в чате на сайте. Под капотом — Claude API.
+**English** · [Русский](README.ru.md)
 
-Демо — онлайн-школа английского «Speak Up». Для другого бизнеса достаточно заменить файлы в папке `knowledge/`.
+An assistant that answers customers 24/7 from the company's knowledge base, books them in and hands complex conversations over to a human manager. It works in a Telegram bot and in a website chat at the same time. Powered by the Claude API.
+
+The demo is an online English school. For another business, just replace the files in `knowledge/`.
+
+> The demo knowledge base and UI are in Russian. Any language works — the assistant answers in the language of the knowledge base and the customer.
 
 <p>
-  <img src="docs/telegram-lead.png" width="420" alt="Telegram: запись на пробный урок и заявка менеджеру">
-  <img src="docs/telegram-manager.png" width="420" alt="Telegram: менеджер отвечает клиенту и возвращает диалог боту">
+  <img src="docs/telegram-lead.png" width="420" alt="Telegram: booking a trial lesson and a lead for the manager">
+  <img src="docs/telegram-manager.png" width="420" alt="Telegram: the manager replies to the customer and hands the chat back to the bot">
 </p>
 <p>
-  <img src="docs/web-chat.png" width="320" alt="Чат на сайте: цены, запись на пробный урок, заявка">
+  <img src="docs/web-chat.png" width="320" alt="Website chat: prices, booking, lead">
 </p>
 
-Скриншоты сделаны в демо-режиме (без ключа Claude API): ответы берутся из базы знаний по ключевым словам. С ключом те же сценарии обслуживает Claude.
+Screenshots were taken in demo mode (no Claude API key): answers come from the knowledge base via keyword search. With a key, the same flows are handled by Claude.
 
-## Что умеет
+## Features
 
-**Для клиента**
-- Отвечает на вопросы о ценах, форматах, скидках, условиях — **только по базе знаний**, без выдуманных фактов
-- Ведёт запись: спрашивает имя и телефон и сохраняет заявку
-- По просьбе «позовите менеджера» (или при жалобе, вопросе по договору) передаёт диалог человеку
-- Помнит контекст разговора
+**For customers**
+- Answers questions about prices, formats, discounts and policies — **only from the knowledge base**, no made-up facts
+- Books customers in: asks for a name and phone number and saves a lead
+- Hands the conversation over to a human on request, on complaints or contract questions
+- Remembers the conversation context
 
-**Для менеджера**
-- Заявки мгновенно приходят в Telegram
-- Переданный диалог приходит с кратким содержанием; менеджер отвечает клиенту **реплаем прямо в Telegram**, бот при этом молчит
-- Кнопка «Вернуть диалог боту», команда `/leads` — последние заявки
+**For managers**
+- Leads arrive in Telegram instantly
+- Handed-over conversations come with a short summary; the manager replies **by replying to the message in Telegram**, and the bot stays silent meanwhile
+- "Hand back to bot" button, `/leads` command for recent leads
 
-**Под капотом**
-- Claude API с инструментами `save_lead` и `handoff_to_manager` (`strict: true` — аргументы всегда по схеме)
-- База знаний — обычные markdown-файлы; целиком в системном промпте с **кэшированием** (база оплачивается раз в 5 минут, а не на каждом сообщении)
-- История диалога только дописывается и никогда не редактируется: кэш работает, а при обновлении базы знаний или после суток тишины просто начинается новый диалог
-- **Лимиты расходов**: не больше 20 сообщений в час от клиента, новый диалог после 60 сообщений
-- Автоматический повтор на резервной модели, если запрос отклонён фильтрами (`fallbacks: "default"`)
-- **Демо-режим без ключа API**: ищет ответ в базе по ключевым словам — можно запустить и показать бесплатно
-- 14 автотестов, включая цикл вызова инструментов Claude на подменённом API
+**Under the hood**
+- Claude API with `save_lead` and `handoff_to_manager` tools (`strict: true` — arguments always match the schema)
+- The knowledge base is plain markdown, placed in the system prompt with **prompt caching** (paid once per 5 minutes, not on every message)
+- Append-only conversation history: caching keeps working; when the knowledge base changes or after a day of silence, a new conversation simply starts
+- **Cost limits**: at most 20 messages per hour per customer, a fresh conversation after 60 messages
+- Automatic retry on a fallback model if a request is declined by safety filters (`fallbacks: "default"`)
+- **Demo mode without an API key**: keyword search over the knowledge base — runs and demos for free
+- 14 automated tests, including Claude's tool-use loop against a mocked API
 
-## Стек
+## Tech stack
 
 Node.js 24 · TypeScript · [Claude API](https://docs.claude.com) (`@anthropic-ai/sdk`) · grammY · Fastify · SQLite (`node:sqlite`) · `node:test`
 
-## Структура
+## Structure
 
 ```
-knowledge/               # база знаний: markdown, разделы «## Вопрос»
+knowledge/               # knowledge base: markdown, "## Question" sections
 src/
-├── index.ts             # точка входа: чат на сайте + Telegram-бот
+├── index.ts             # entry point: website chat + Telegram bot
 ├── assistant/
-│   ├── claude.ts        # ассистент на Claude: запрос, инструменты, цикл вызовов
-│   ├── prompt.ts        # системный промпт с правилами и базой знаний
-│   └── demo.ts          # демо-режим без ИИ: поиск по базе
-├── chat-service.ts      # диалоги, лимиты, заявки, передача менеджеру
-├── bot.ts               # Telegram: клиенты и менеджеры
-├── web-chat.ts          # чат для сайта (страница + API), встраивается через iframe
-├── knowledge.ts         # загрузка и разбор базы знаний
-└── db.ts                # SQLite: диалоги, сообщения, заявки
+│   ├── claude.ts        # Claude assistant: request, tools, tool-use loop
+│   ├── prompt.ts        # system prompt with rules and the knowledge base
+│   └── demo.ts          # demo mode without AI: knowledge base search
+├── chat-service.ts      # conversations, limits, leads, handoff
+├── bot.ts               # Telegram: customers and managers
+├── web-chat.ts          # website chat (page + API), embeddable via iframe
+├── knowledge.ts         # loading and parsing the knowledge base
+└── db.ts                # SQLite: conversations, messages, leads
 ```
 
-## Запуск
+## Running
 
-Нужен **Node.js 24+**.
+Requires **Node.js 24+**.
 
 ```bash
 npm install
 npm start
 ```
 
-Откройте http://localhost:3000 — это чат для сайта. Без настроек он работает в демо-режиме.
+Open http://localhost:3000 — that's the website chat. Without configuration it runs in demo mode.
 
-Чтобы подключить всё остальное, скопируйте `.env.example` в `.env`:
+To enable everything else, copy `.env.example` to `.env`:
 
-| Переменная | Зачем |
+| Variable | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | ключ Claude API — ответы от ИИ вместо демо-режима |
-| `CLAUDE_MODEL` | модель; по умолчанию `claude-opus-5-5`, для экономии можно `claude-haiku-5-5` |
-| `BOT_TOKEN` | токен Telegram-бота от @BotFather |
-| `ADMIN_IDS` | Telegram ID менеджеров (узнать свой — `/myid` в боте) |
-| `TELEGRAM_PROXY` | HTTP-прокси, если `api.telegram.org` недоступен с сервера |
+| `ANTHROPIC_API_KEY` | Claude API key — AI answers instead of demo mode |
+| `CLAUDE_MODEL` | model; `claude-opus-5-5` by default, `claude-haiku-5-5` to save costs |
+| `BOT_TOKEN` | Telegram bot token from @BotFather |
+| `ADMIN_IDS` | managers' Telegram IDs (send `/myid` to the bot) |
 
 ```bash
-npm test        # тесты
+npm test
 npm run typecheck
 ```
 
-## Встраивание на сайт
+## Embedding on a website
 
 ```html
-<iframe src="https://chat.example.ru/" style="width:380px;height:600px;border:0;border-radius:16px"></iframe>
+<iframe src="https://chat.example.com/" style="width:380px;height:600px;border:0;border-radius:16px"></iframe>
 ```
 
-## Сколько это стоит клиенту
+## Running costs
 
-Расход зависит от модели и длины базы знаний. Благодаря кэшированию база знаний стоит дёшево: повторно прочитанные из кэша токены в 10 раз дешевле обычных. Для небольшого бизнеса с базой на 3–5 страниц и сотней диалогов в день — порядок сотен рублей в месяц на `claude-haiku-5-5`. Перед запуском оценивайте на реальных диалогах.
+Costs depend on the model and the size of the knowledge base. Thanks to prompt caching, the knowledge base is cheap: cached tokens cost about 10× less than regular ones. For a small business with a 3–5 page knowledge base and ~100 conversations a day, it's a few dollars a month on `claude-haiku-5-5`. Estimate on real conversations before launch.
 
-**Что можно добавить за доплату:** выгрузку заявок в CRM или Google Таблицы, загрузку базы знаний из PDF и сайта, аналитику частых вопросов, голосовые сообщения, оплату.
+**Possible extensions:** CRM or Google Sheets integration, importing the knowledge base from PDFs and websites, analytics of frequent questions, voice messages, payments.
